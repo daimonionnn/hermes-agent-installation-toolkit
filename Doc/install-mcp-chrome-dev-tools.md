@@ -9,8 +9,9 @@ This guide documents how to set up the [Chrome DevTools MCP](https://github.com/
 - [What Is Chrome DevTools MCP?](#what-is-chrome-devtools-mcp)
 - [Prerequisites](#prerequisites)
 - [Step 1: Install Google Chrome (Non-Sandboxed)](#step-1-install-google-chrome-non-sandboxed)
-- [Step 2: Configure Hermes Agent](#step-2-configure-hermes-agent)
-- [Step 3: Verify the Setup](#step-3-verify-the-setup)
+- [Step 2: Start Chrome with Remote Debugging](#step-2-start-chrome-with-remote-debugging)
+- [Step 3: Configure Hermes Agent](#step-3-configure-hermes-agent)
+- [Step 4: Verify the Setup](#step-4-verify-the-setup)
 - [Available Tools](#available-tools)
 - [Authentication Workflows](#authentication-workflows)
 - [Known Issues & Troubleshooting](#known-issues--troubleshooting)
@@ -38,6 +39,7 @@ This is especially useful for web scraping behind paywalls, logging into website
 - **Node.js & npm** installed (for `npx`)
 - **Hermes Agent** configured and running
 - **Google Chrome or Chromium** (non-snap) installed on the system
+- **Chrome launched manually** with `--remote-debugging-port` and a **dedicated profile directory** (see Step 2)
 
 ---
 
@@ -75,32 +77,73 @@ google-chrome-stable --version
 
 ---
 
-## Step 2: Configure Hermes Agent
+## Step 2: Start Chrome with Remote Debugging (Recommended)
 
-Add the MCP server entry to your `~/.hermes/config.yaml`:
+**Before configuring Hermes Agent, you must start Chrome manually** with remote debugging enabled and a **dedicated profile directory**. This is the recommended approach because:
 
-```yaml
-mcp_servers:
-  chrome-devtools:
-    command: "npx"
-    args: ["-y", "chrome-devtools-mcp@latest", "--browser-path=/usr/bin/google-chrome-stable"]
-    timeout: 60
-    connect_timeout: 30
+- ✅ Authentication state (cookies, logins) **persists across Hermes Agent restarts**
+- ✅ Your AI agent browser session is **isolated** from your personal Chrome profile
+- ✅ You maintain full control over the browser lifecycle
+- ✅ Works reliably with cron jobs and long-running sessions
+
+### Launching Chrome
+
+```bash
+# Recommended: Start Chrome with a dedicated AI-agent profile
+google-chrome-stable \
+  --remote-debugging-port=9222 \
+  --user-data-dir=/home/$USER/.config/google-chrome-ai-agent
 ```
 
-### Configuration Explained
+> **⚠️ Why a separate `--user-data-dir`?**
+>
+> Using a dedicated profile directory keeps your AI agent's browser data (cookies, history, cache) completely separate from your personal Chrome profile. This means:
+> - Your personal bookmarks, passwords, and extensions stay untouched
+> - The AI agent can log into services without polluting your main profile
+> - You can safely clear the AI agent profile without affecting daily browsing
+> - You can run both profiles simultaneously
 
-| Parameter | Value | Description |
-|---|---|---|
-| `command` | `npx` | Runs the MCP server via npx (auto-installs on first run) |
-| `args` | `-y chrome-devtools-mcp@latest` | Pulls latest version without prompts |
-| `--browser-path` | `/usr/bin/google-chrome-stable` | **Required** — path to non-sandboxed Chrome binary |
-| `timeout` | `60` | Request timeout in seconds (increase for slow pages) |
-| `connect_timeout` | `30` | Connection timeout for CDP handshake |
+### Verifying Chrome is Ready
 
-### Alternative: Connecting to an Existing Chrome Instance
+After launching, check that the debugging port is active:
 
-If you already have Chrome running with remote debugging enabled, point MCP at it:
+```bash
+curl -s http://127.0.0.1:9222/json/version
+```
+
+You should see JSON output with your Chrome version and webSocket URL:
+
+```json
+{
+  "Browser": "Chrome/125.0.xxxx.xx",
+  "Protocol-Version": "1.3",
+  "webSocketURL": "ws://127.0.0.1:9222/devtools/browser/..."
+}
+```
+
+### Auto-Start on Login (Optional)
+
+To have Chrome with remote debugging start automatically, add a desktop entry:
+
+```bash
+mkdir -p ~/.config/autostart
+
+cat > ~/.config/autostart/chrome-ai-agent.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=Chrome AI Agent
+Exec=google-chrome-stable --remote-debugging-port=9222 --user-data-dir=/home/$USER/.config/google-chrome-ai-agent
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+EOF
+```
+
+---
+
+## Step 3: Configure Hermes Agent
+
+Add the MCP server entry to your `~/.hermes/config.yaml`:
 
 ```yaml
 mcp_servers:
@@ -111,13 +154,47 @@ mcp_servers:
     connect_timeout: 30
 ```
 
-> **Note:** With `--cdp-endpoint`, MCP does **not** manage the browser lifecycle — you are responsible for starting Chrome with `--remote-debugging-port=9222`.
+### Configuration Explained
+
+| Parameter | Value | Description |
+|---|---|---|
+| `command` | `npx` | Runs the MCP server via npx (auto-installs on first run) |
+| `args` | `-y chrome-devtools-mcp@latest` | Pulls latest version without prompts |
+| `--cdp-endpoint` | `http://127.0.0.1:9222` | **Recommended** — connects to your manually-launched Chrome instance |
+| `timeout` | `60` | Request timeout in seconds (increase for slow pages) |
+| `connect_timeout` | `30` | Connection timeout for CDP handshake |
+
+### Alternative: Let MCP Manage the Browser (Not Recommended)
+
+If you prefer MCP to launch Chrome automatically, use `--browser-path` instead:
+
+```yaml
+mcp_servers:
+  chrome-devtools:
+    command: "npx"
+    args: ["-y", "chrome-devtools-mcp@latest", "--browser-path=/usr/bin/google-chrome-stable"]
+    timeout: 60
+    connect_timeout: 30
+```
+
+> **⚠️ Limitations of MCP-managed browser:**
+> - Browser lifecycle is tied to the MCP server process — if MCP restarts, you lose all sessions
+> - No persistent profile — every launch starts fresh (no saved logins/cookies)
+> - Cron jobs get isolated sessions that don't share cookies with interactive sessions
+> - Less control over Chrome flags and profile configuration
 
 ---
 
-## Step 3: Verify the Setup
+## Step 4: Verify the Setup
 
 After saving `config.yaml`, restart Hermes Agent. The MCP server auto-starts on next invocation.
+
+### Quick Checklist
+
+1. Chrome is running with `--remote-debugging-port=9222` ✅
+2. `curl http://127.0.0.1:9222/json/version` returns JSON ✅
+3. Hermes Agent config has `--cdp-endpoint=http://127.0.0.1:9222` ✅
+4. Hermes Agent restarted ✅
 
 ### Test Navigation
 
@@ -179,23 +256,20 @@ All tools are prefixed with `mcp_chrome_devtools_`:
 
 Chrome DevTools MCP maintains full browser session state across all tool calls. Once you log in, authentication persists for the lifetime of the browser process.
 
-### Example: Logging into Substack
+### Example: Logging into Gmail
 
 ```
-# Step 1: Navigate to login page
-mcp_chrome_devtools_navigate_page(url="https://substack.com/sign_in", type="url")
+# Step 1: Navigate to Gmail
+mcp_chrome_devtools_navigate_page(url="https://mail.google.com", type="url")
 
-# Step 2: Take snapshot to find element UIDs
+# Step 2: Take snapshot to inspect the page
 mcp_chrome_devtools_take_snapshot(verbose=false)
 
-# Step 3: Fill email field (use UID from snapshot)
-mcp_chrome_devtools_fill(uid="e123", value="user@email.com")
-
-# Step 4: Click continue button
-mcp_chrome_devtools_click(uid="e124")
-
-# Step 5: Enter verification code when prompted
-mcp_chrome_devtools_fill(uid="e125", value="123456")
+# Step 3: If not logged in, fill credentials and submit
+mcp_chrome_devtools_fill(uid="e123", value="user@gmail.com")
+mcp_chrome_devtools_click(uid="e124")  # Next button
+mcp_chrome_devtools_fill(uid="e125", value="password")
+mcp_chrome_devtools_click(uid="e126")  # Sign in
 
 # ✅ Session is now authenticated — all subsequent navigations stay logged in
 ```
@@ -204,15 +278,24 @@ mcp_chrome_devtools_fill(uid="e125", value="123456")
 
 - Authentication state survives across page navigations within the same session
 - Cookies and `localStorage` are preserved while the browser process is alive
-- The browser process stays running as long as Hermes Agent is active
+- **With `--cdp-endpoint` + custom `--user-data-dir`:** Authentication persists even if Hermes Agent restarts, as long as Chrome keeps running
+- The browser process stays running as long as you keep it running (or until you close it)
 
 ---
 
 ## Known Issues & Troubleshooting
 
+### ❌ "Could not connect to Chrome" / "Failed to fetch browser webSocket URL"
+
+**Root cause:** Chrome is not running, or the debugging port is not accessible.
+**Fix:**
+1. Make sure Chrome was started with `--remote-debugging-port=9222`
+2. Verify with: `curl -s http://127.0.0.1:9222/json/version`
+3. If Chrome was closed, restart it with the same `--user-data-dir` flag
+
 ### ❌ "Protocol error (Target.setDiscoverTargets): Target closed"
 
-**Root cause:** Snap Chromium sandbox blocks CDP connections.  
+**Root cause:** Snap Chromium sandbox blocks CDP connections.
 **Fix:** Install Google Chrome via `.deb` package — see [Step 1](#step-1-install-google-chrome-non-sandboxed).
 
 ### ❌ MCP Server Fails to Start
@@ -224,9 +307,9 @@ cat ~/.hermes/logs/mcp-stderr.log | grep chrome-devtools
 ```
 
 Common fixes:
-- Verify `--browser-path` points to an existing binary
+- Verify `--cdp-endpoint` points to an accessible Chrome instance
 - Ensure Node.js is installed and `npx` works from your shell
-- Increase `timeout` if Chrome takes a long time to start on slow hardware
+- Increase `timeout` if Chrome takes a long time to respond on slow hardware
 
 ### ❌ Tools Return "Server Not Available"
 
@@ -234,21 +317,26 @@ The MCP server process may have crashed. Restart Hermes Agent or check whether t
 
 ```bash
 ps aux | grep chrome-devtools-mcp
+ps aux | grep "remote-debugging-port=9222"
 ```
 
 ---
 
 ## Important Notes
 
-1. **MCP manages browser lifecycle** — Don't manually start headless Chrome unless using `--cdp-endpoint` mode. The MCP server handles launching and shutting down the browser automatically.
+1. **Always use `--cdp-endpoint` with manually-launched Chrome** — This gives you persistent sessions, control over the browser lifecycle, and proper isolation via `--user-data-dir`. The MCP-managed mode (`--browser-path`) is only suitable for quick one-off tasks.
 
-2. **Session isolation** — Each Hermes Agent session gets its own browser instance. Cron jobs run in isolated sessions and do **not** share cookies with interactive terminal sessions.
+2. **Session persistence across Hermes Agent restarts** — When using `--cdp-endpoint`, your Chrome instance keeps running independently. If Hermes Agent restarts (or crashes), the MCP server simply reconnects to the same Chrome instance — all logins and cookies survive.
 
-3. **Snap = No CDP** — This is a hard constraint. If Ubuntu auto-installed Chromium via snap, switch to Google Chrome or install from the official PPA.
+3. **Cron jobs share the same Chrome session** — Because Chrome runs independently with `--cdp-endpoint`, cron jobs connect to the same browser instance and inherit all authentication state. This is perfect for monitoring tasks that need logged-in access.
 
-4. **Timeout tuning** — For pages with heavy JavaScript (SPAs, paywalled content), increase `timeout: 60` to `120` or higher.
+4. **Snap = No CDP** — This is a hard constraint. If Ubuntu auto-installed Chromium via snap, switch to Google Chrome or install from the official PPA.
 
-5. **Element UIDs are dynamic** — The `uid` values in snapshots change between page loads. Always take a fresh snapshot before clicking or filling elements.
+5. **Timeout tuning** — For pages with heavy JavaScript (SPAs, paywalled content), increase `timeout: 60` to `120` or higher.
+
+6. **Element UIDs are dynamic** — The `uid` values in snapshots change between page loads. Always take a fresh snapshot before clicking or filling elements.
+
+7. **Chrome process resilience** — If Chrome crashes or gets closed, you need to restart it manually with the same `--user-data-dir` flag. All saved sessions (cookies, logins) are restored from the profile directory.
 
 ---
 
