@@ -1,0 +1,22 @@
+services:
+  hermes-secondary:
+    image: ${HERMES_SECONDARY_IMAGE:-nousresearch/hermes-agent:latest}
+    container_name: ${HERMES_SECONDARY_CONTAINER:-hermes-secondary}
+    restart: unless-stopped
+    command: gateway run
+    shm_size: "1gb"
+    ports:
+      # Host port 8643 avoids clashing with a bare-metal Hermes API server on 8642.
+      - "${HERMES_SECONDARY_API_PORT:-8643}:8642"
+    volumes:
+      # Keep this separate from ~/.hermes. Never run two gateways on the same data dir.
+      - "${HERMES_SECONDARY_DATA_DIR:-./.hermes-secondary}:/opt/data"
+      # Optional: allow the agent inside the container to control host Docker.
+      # - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      # Lets the container reach host services such as LM Studio or Ollama.
+      - "host.docker.internal:host-gateway"
+    environment:
+      # The helper script exports your real UID/GID. Defaults match the image user.
+      HERMES_UID: "${HERMES_UID:-10000}"
+      HERMES_GID: "${HERMES_GID:-10000}"

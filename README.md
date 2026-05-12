@@ -36,6 +36,50 @@ hermes gateway start
 
 > **Video walkthrough:** [YouTube — Hermes AI Agent Setup](https://www.youtube.com/watch?v=THA8Fov44QY)
 
+### ✅ Optional (but recommended) post-install steps
+
+#### Step A — Self-hosted Firecrawl (web scraping & search)
+
+Firecrawl gives Hermes the ability to scrape, crawl, and extract content from websites. Running it locally keeps all data on your machine and avoids API rate limits.
+
+```bash
+bash install_firecrawl_docker.sh
+```
+
+> Full guide: [Fix Firecrawl & Browser on Headless Linux](Doc/fix-firecrawl-and-browser.md)
+
+---
+
+#### Step B — Chrome DevTools MCP Server (authenticated browser sessions)
+
+Connects Hermes to a real Chrome browser via the Chrome DevTools Protocol (CDP). Required for:
+
+- Web pages that need a logged-in user (Gmail, Twitter/X, LinkedIn, etc.)
+- Sites behind a firewall or paywall with no public API
+- Sites whose API is paid or unavailable
+
+```bash
+# Launch Chrome with remote debugging (do this once, keep it running)
+google-chrome-stable \
+  --remote-debugging-port=9222 \
+  --user-data-dir=$HOME/.config/google-chrome-ai-agent
+```
+
+Then add to `~/.hermes/config.yaml`:
+
+```yaml
+mcp_servers:
+  chrome-devtools:
+    command: "npx"
+    args: ["-y", "chrome-devtools-mcp@latest", "--cdp-endpoint=http://127.0.0.1:9222"]
+    timeout: 60
+    connect_timeout: 30
+```
+
+> Full guide: [Install Chrome DevTools MCP Server](Doc/install-mcp-chrome-dev-tools.md)
+
+> ⚠️ **Security warning:** Chrome DevTools MCP gives Hermes full control over a real browser window, including access to all cookies, saved passwords, and active sessions in that profile. Use a **dedicated Chrome profile** (the `--user-data-dir` flag above) — never point it at your personal profile. Only enable this when you need it for sites with no API alternative. The risk is real but manageable with a separate profile.
+
 ---
 
 ## 📂 Documentation
@@ -43,6 +87,7 @@ hermes gateway start
 | Guide | Description |
 |---|---|
 | [Fix Firecrawl & Browser on Headless Linux](Doc/fix-firecrawl-and-browser.md) | Resolving missing system libraries, sandbox issues, and `--no-sandbox` configuration |
+| [Install a Secondary Hermes Agent in Docker](Doc/install-secondary-hermes-docker.md) | Run a second, isolated Hermes gateway in Docker alongside a bare-metal install |
 | [Install Chrome DevTools MCP Server](Doc/install-mcp-chrome-dev-tools.md) | Setting up browser automation with persistent sessions via CDP |
 | [Migrate from OpenClaw](Doc/openclaw_migration.md) | Archiving your OpenClaw workspace and importing data into Hermes |
 
@@ -55,11 +100,46 @@ Hermes-Agent-Installation-Toolkit/
 ├── README.md                          # You are here
 ├── Doc/
 │   ├── fix-firecrawl-and-browser.md   # Firecrawl deps + browser sandbox fix
+│   ├── install-secondary-hermes-docker.md # Second isolated Hermes in Docker
 │   ├── install-mcp-chrome-dev-tools.md # Chrome DevTools MCP setup guide
 │   └── openclaw_migration.md          # OpenClaw → Hermes migration steps
 ├── install_hermes.sh                  # One-liner: curl installer wrapper
+├── install_hermes_docker_secondary.sh  # Secondary Docker Hermes helper
+├── docker-compose.hermes-secondary.yml # Secondary Docker Hermes Compose service
 └── install_firecrawl_docker.sh        # Self-hosted Firecrawl via Docker Compose
 ```
+
+---
+
+## 🐳 Secondary Hermes in Docker (Alongside Bare-Metal)
+
+If you already run Hermes on bare-metal and want a second isolated instance in Docker:
+
+```bash
+# 1) One-time setup wizard for the Docker instance
+bash install_hermes_docker_secondary.sh setup
+
+# 2) Start the Docker gateway
+bash install_hermes_docker_secondary.sh start
+
+# 3) Follow logs
+bash install_hermes_docker_secondary.sh logs
+```
+
+Defaults used by this toolkit:
+
+- Bare-metal data: `~/.hermes`
+- Docker data: `~/.hermes-secondary`
+- Docker API host port: `8643` (mapped to container `8642`)
+
+Quick interactive chat from the container:
+
+```bash
+bash install_hermes_docker_secondary.sh shell
+hermes
+```
+
+Full guide: [Install a Secondary Hermes Agent in Docker](Doc/install-secondary-hermes-docker.md)
 
 ---
 

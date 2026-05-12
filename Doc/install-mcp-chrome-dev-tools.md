@@ -16,6 +16,15 @@ This guide documents how to set up the [Chrome DevTools MCP](https://github.com/
 - [Authentication Workflows](#authentication-workflows)
 - [Known Issues & Troubleshooting](#known-issues--troubleshooting)
 - [Important Notes](#important-notes)
+- [Related Guide](#related-guide)
+
+---
+
+## Related Guide
+
+If you want to run Hermes on bare-metal and also keep a second isolated Hermes instance in Docker, follow:
+
+- [Install a Secondary Hermes Agent in Docker](install-secondary-hermes-docker.md)
 
 ---
 
