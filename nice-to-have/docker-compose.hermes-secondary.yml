@@ -13,6 +13,8 @@ services:
       - "${HERMES_SECONDARY_DATA_DIR:-./.hermes-secondary}:/opt/data"
       # Optional: allow the agent inside the container to control host Docker.
       # - /var/run/docker.sock:/var/run/docker.sock
+    tmpfs:
+      - /tmp:mode=1777
     extra_hosts:
       # Lets the container reach host services such as LM Studio or Ollama.
       - "host.docker.internal:host-gateway"

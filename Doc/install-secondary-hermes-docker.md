@@ -45,7 +45,7 @@ Replace `1234` with your host LLM server port. Also ensure the host LLM server l
 From this repository:
 
 ```bash
-bash install_hermes_docker_secondary.sh setup
+bash nice-to-have/install_hermes_docker_secondary.sh setup
 ```
 
 During model/provider setup:
@@ -60,26 +60,26 @@ During model/provider setup:
 
 ```bash
 # First time only — run setup before starting
-bash install_hermes_docker_secondary.sh setup   # one-time config wizard
-bash install_hermes_docker_secondary.sh start   # start the gateway
+bash nice-to-have/install_hermes_docker_secondary.sh setup   # one-time config wizard
+bash nice-to-have/install_hermes_docker_secondary.sh start   # start the gateway
 ```
 
 On subsequent runs, just start directly:
 
 ```bash
-bash install_hermes_docker_secondary.sh start
+bash nice-to-have/install_hermes_docker_secondary.sh start
 ```
 
 Check status:
 
 ```bash
-bash install_hermes_docker_secondary.sh status
+bash nice-to-have/install_hermes_docker_secondary.sh status
 ```
 
 Follow logs:
 
 ```bash
-bash install_hermes_docker_secondary.sh logs
+bash nice-to-have/install_hermes_docker_secondary.sh logs
 ```
 
 ---
@@ -105,7 +105,7 @@ API_SERVER_MODEL_NAME=hermes-secondary
 Restart the container:
 
 ```bash
-bash install_hermes_docker_secondary.sh restart
+bash nice-to-have/install_hermes_docker_secondary.sh restart
 ```
 
 The Docker agent API will be available on the host at:
@@ -129,7 +129,7 @@ If you configured a bot token during setup, just open the chat in that platform.
 ### Option B — Interactive CLI (quickest, no extra config)
 
 ```bash
-bash install_hermes_docker_secondary.sh shell
+bash nice-to-have/install_hermes_docker_secondary.sh shell
 hermes
 ```
 
@@ -141,7 +141,7 @@ The `shell` command now opens a container shell with Hermes already on PATH.
 2. Restart the container:
 
 ```bash
-bash install_hermes_docker_secondary.sh restart
+bash nice-to-have/install_hermes_docker_secondary.sh restart
 ```
 
 3. Test with curl:
@@ -166,19 +166,19 @@ API Key  : YOUR_API_SERVER_KEY
 
 ```bash
 # Stop the Docker agent
-bash install_hermes_docker_secondary.sh stop
+bash nice-to-have/install_hermes_docker_secondary.sh stop
 
 # Restart it
-bash install_hermes_docker_secondary.sh restart
+bash nice-to-have/install_hermes_docker_secondary.sh restart
 
 # Open a shell in the running container
-bash install_hermes_docker_secondary.sh shell
+bash nice-to-have/install_hermes_docker_secondary.sh shell
 # then start chat
 hermes
 
 # Pull the latest image
-bash install_hermes_docker_secondary.sh pull
-bash install_hermes_docker_secondary.sh start
+bash nice-to-have/install_hermes_docker_secondary.sh pull
+bash nice-to-have/install_hermes_docker_secondary.sh start
 ```
 
 ---
@@ -188,11 +188,11 @@ bash install_hermes_docker_secondary.sh start
 ```bash
 HERMES_SECONDARY_DATA_DIR=$HOME/.hermes-research \
 HERMES_SECONDARY_API_PORT=8644 \
-bash install_hermes_docker_secondary.sh setup
+bash nice-to-have/install_hermes_docker_secondary.sh setup
 
 HERMES_SECONDARY_DATA_DIR=$HOME/.hermes-research \
 HERMES_SECONDARY_API_PORT=8644 \
-bash install_hermes_docker_secondary.sh start
+bash nice-to-have/install_hermes_docker_secondary.sh start
 ```
 
 ---

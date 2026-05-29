@@ -2,7 +2,7 @@
 set -euo pipefail
 
 CONTAINER_CLI="${CONTAINER_CLI:-docker}"
-COMPOSE_CLI="${COMPOSE_CLI:-docker-compose}"
+COMPOSE_CLI="${COMPOSE_CLI:-docker compose}"
 PROJECT_NAME="${HERMES_SECONDARY_PROJECT:-hermes-secondary}"
 CONTAINER_NAME="${HERMES_SECONDARY_CONTAINER:-hermes-secondary}"
 IMAGE="${HERMES_SECONDARY_IMAGE:-nousresearch/hermes-agent:latest}"
@@ -43,7 +43,7 @@ compose() {
   HERMES_SECONDARY_API_PORT="$API_PORT" \
   HERMES_SECONDARY_CONTAINER="$CONTAINER_NAME" \
   HERMES_SECONDARY_IMAGE="$IMAGE" \
-    "$COMPOSE_CLI" -p "$PROJECT_NAME" -f "$COMPOSE_FILE" "$@"
+    $COMPOSE_CLI -p "$PROJECT_NAME" -f "$COMPOSE_FILE" "$@"
 }
 
 ensure_data_dir() {

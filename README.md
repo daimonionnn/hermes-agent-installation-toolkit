@@ -43,14 +43,58 @@ hermes gateway start
 Firecrawl gives Hermes the ability to scrape, crawl, and extract content from websites. Running it locally keeps all data on your machine and avoids API rate limits.
 
 ```bash
-bash install_firecrawl_docker.sh
+bash scripts/install_firecrawl_docker.sh
 ```
 
 > Full guide: [Fix Firecrawl & Browser on Headless Linux](Doc/fix-firecrawl-and-browser.md)
 
 ---
 
-#### Step B — Chrome DevTools MCP Server (authenticated browser sessions)
+#### Step B — Autostart Services at Boot (no login required)
+
+Makes Firecrawl, the Hermes gateway, and Chrome CDP all start automatically when the machine boots — even before any user logs in.
+
+```bash
+sudo bash scripts/install_autostart_services.sh
+```
+
+This creates and enables two systemd services:
+
+| Service | What it starts | Port |
+|---|---|---|
+| `firecrawl.service` | Firecrawl Docker stack | 3002 |
+| `chrome-cdp.service` | Chrome headless + CDP remote debugging | 9222 |
+
+> **Note:** The native Hermes gateway is already managed by its own user service, installed automatically by `hermes gateway install` during setup. Run `hermes gateway status` to check it.
+
+Post-install management:
+
+```bash
+sudo systemctl status  firecrawl hermes-gateway chrome-cdp
+sudo systemctl restart firecrawl
+sudo journalctl -u hermes-gateway -f
+```
+
+---
+
+#### Step D — Obsidian Knowledge Base (with plugins)
+
+Installs [Obsidian](https://obsidian.md) and pre-downloads 11 community plugins into a ready-to-use vault at `~/Obsidian`.
+
+```bash
+bash nice-to-have/install_obsidian.sh              # vault at ~/Obsidian (default)
+bash nice-to-have/install_obsidian.sh ~/my/vault   # or a custom path
+```
+
+Plugins included: **Kanban, Dataview, Templater, Git, Tasks, Excalidraw, Calendar, QuickAdd, Advanced Tables, Smart Connections, Copilot**
+
+After running, open Obsidian, open `~/Obsidian` as your vault, then go to **Settings → Community plugins** to enable each plugin.
+
+> See [Nice-to-Have Tools & Skills](Doc/nice_to_have_tools_and_skills.md) for descriptions of all recommended extras.
+
+---
+
+#### Step C — Chrome DevTools MCP Server (authenticated browser sessions)
 
 Connects Hermes to a real Chrome browser via the Chrome DevTools Protocol (CDP). Required for:
 
@@ -58,9 +102,18 @@ Connects Hermes to a real Chrome browser via the Chrome DevTools Protocol (CDP).
 - Sites behind a firewall or paywall with no public API
 - Sites whose API is paid or unavailable
 
+If you ran Step B, Chrome is already running headlessly on port 9222 at boot. To take over with a visible Chrome window after login, use the included helper script:
+
 ```bash
-# Launch Chrome with remote debugging (do this once, keep it running)
-google-chrome-stable \
+bash scripts/chrome_remote_debug.sh
+```
+
+This stops the headless `chrome-cdp` service, opens a visible Chrome window on the same port and profile, then **automatically restarts the headless service** when you close Chrome or the terminal.
+
+To launch Chrome manually without the script (if autostart is not installed):
+
+```bash
+google-chrome \
   --remote-debugging-port=9222 \
   --user-data-dir=$HOME/.config/google-chrome-ai-agent
 ```
@@ -87,6 +140,10 @@ mcp_servers:
 | Guide | Description |
 |---|---|
 | [Fix Firecrawl & Browser on Headless Linux](Doc/fix-firecrawl-and-browser.md) | Resolving missing system libraries, sandbox issues, and `--no-sandbox` configuration |
+| [Autostart Services at Boot](scripts/install_autostart_services.sh) | Systemd services for Firecrawl and Chrome CDP — start at boot without login |
+| [Chrome Remote Debug Helper](scripts/chrome_remote_debug.sh) | Switch from headless CDP service to a visible Chrome window and back |
+| [Nice-to-Have Tools & Skills](Doc/nice_to_have_tools_and_skills.md) | Recommended extras: Firecrawl, Chrome DevTools MCP, Context7 |
+| [Obsidian + Plugins Installer](nice-to-have/install_obsidian.sh) | Installs Obsidian and 11 community plugins into a pre-configured vault |
 | [Install a Secondary Hermes Agent in Docker](Doc/install-secondary-hermes-docker.md) | Run a second, isolated Hermes gateway in Docker alongside a bare-metal install |
 | [Install Chrome DevTools MCP Server](Doc/install-mcp-chrome-dev-tools.md) | Setting up browser automation with persistent sessions via CDP |
 | [Migrate from OpenClaw](Doc/openclaw_migration.md) | Archiving your OpenClaw workspace and importing data into Hermes |
@@ -102,11 +159,16 @@ Hermes-Agent-Installation-Toolkit/
 │   ├── fix-firecrawl-and-browser.md   # Firecrawl deps + browser sandbox fix
 │   ├── install-secondary-hermes-docker.md # Second isolated Hermes in Docker
 │   ├── install-mcp-chrome-dev-tools.md # Chrome DevTools MCP setup guide
+│   ├── nice_to_have_tools_and_skills.md # Recommended extras: Firecrawl, CDP, Context7
 │   └── openclaw_migration.md          # OpenClaw → Hermes migration steps
 ├── install_hermes.sh                  # One-liner: curl installer wrapper
-├── install_hermes_docker_secondary.sh  # Secondary Docker Hermes helper
-├── docker-compose.hermes-secondary.yml # Secondary Docker Hermes Compose service
-└── install_firecrawl_docker.sh        # Self-hosted Firecrawl via Docker Compose
+├── install_firecrawl_docker.sh        # Self-hosted Firecrawl via Docker Compose
+├── install_autostart_services.sh      # Systemd autostart: Firecrawl + Chrome CDP
+├── chrome_remote_debug.sh             # Switch headless CDP → visible Chrome window
+└── nice-to-have/
+    ├── install_hermes_docker_secondary.sh  # Secondary Docker Hermes helper
+    ├── docker-compose.hermes-secondary.yml # Secondary Docker Hermes Compose service
+    └── install_obsidian.sh                # Obsidian + 11 community plugins installer
 ```
 
 ---
@@ -117,13 +179,13 @@ If you already run Hermes on bare-metal and want a second isolated instance in D
 
 ```bash
 # 1) One-time setup wizard for the Docker instance
-bash install_hermes_docker_secondary.sh setup
+bash nice-to-have/install_hermes_docker_secondary.sh setup
 
 # 2) Start the Docker gateway
-bash install_hermes_docker_secondary.sh start
+bash nice-to-have/install_hermes_docker_secondary.sh start
 
 # 3) Follow logs
-bash install_hermes_docker_secondary.sh logs
+bash nice-to-have/install_hermes_docker_secondary.sh logs
 ```
 
 Defaults used by this toolkit:
@@ -135,7 +197,7 @@ Defaults used by this toolkit:
 Quick interactive chat from the container:
 
 ```bash
-bash install_hermes_docker_secondary.sh shell
+bash nice-to-have/install_hermes_docker_secondary.sh shell
 hermes
 ```
 
