@@ -153,7 +153,7 @@ mcp_servers:
 ## 🛠️ What's Included
 
 ```
-Hermes-Agent-Installation-Toolkit/
+hermes-agent-installation-toolkit/
 ├── README.md                          # You are here
 ├── Doc/
 │   ├── fix-firecrawl-and-browser.md   # Firecrawl deps + browser sandbox fix
