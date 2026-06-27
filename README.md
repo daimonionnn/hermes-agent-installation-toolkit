@@ -82,8 +82,8 @@ sudo journalctl -u hermes-gateway -f
 Installs [Obsidian](https://obsidian.md) and pre-downloads 11 community plugins into a ready-to-use vault at `~/Obsidian`.
 
 ```bash
-bash nice-to-have/install_obsidian.sh              # vault at ~/Obsidian (default)
-bash nice-to-have/install_obsidian.sh ~/my/vault   # or a custom path
+bash extras/install_obsidian.sh              # vault at ~/Obsidian (default)
+bash extras/install_obsidian.sh ~/my/vault   # or a custom path
 ```
 
 Plugins included: **Kanban, Dataview, Templater, Git, Tasks, Excalidraw, Calendar, QuickAdd, Advanced Tables, Smart Connections, Copilot**
@@ -143,7 +143,7 @@ mcp_servers:
 | [Autostart Services at Boot](scripts/install_autostart_services.sh) | Systemd services for Firecrawl and Chrome CDP — start at boot without login |
 | [Chrome Remote Debug Helper](scripts/chrome_remote_debug.sh) | Switch from headless CDP service to a visible Chrome window and back |
 | [Nice-to-Have Tools & Skills](Doc/nice_to_have_tools_and_skills.md) | Recommended extras: Firecrawl, Chrome DevTools MCP, Context7 |
-| [Obsidian + Plugins Installer](nice-to-have/install_obsidian.sh) | Installs Obsidian and 11 community plugins into a pre-configured vault |
+| [Obsidian + Plugins Installer](extras/install_obsidian.sh) | Installs Obsidian and 11 community plugins into a pre-configured vault |
 | [Install a Secondary Hermes Agent in Docker](Doc/install-secondary-hermes-docker.md) | Run a second, isolated Hermes gateway in Docker alongside a bare-metal install |
 | [Install Chrome DevTools MCP Server](Doc/install-mcp-chrome-dev-tools.md) | Setting up browser automation with persistent sessions via CDP |
 | [Migrate from OpenClaw](Doc/openclaw_migration.md) | Archiving your OpenClaw workspace and importing data into Hermes |
@@ -165,10 +165,11 @@ hermes-agent-installation-toolkit/
 ├── install_firecrawl_docker.sh        # Self-hosted Firecrawl via Docker Compose
 ├── install_autostart_services.sh      # Systemd autostart: Firecrawl + Chrome CDP
 ├── chrome_remote_debug.sh             # Switch headless CDP → visible Chrome window
-└── nice-to-have/
-    ├── install_hermes_docker_secondary.sh  # Secondary Docker Hermes helper
-    ├── docker-compose.hermes-secondary.yml # Secondary Docker Hermes Compose service
-    └── install_obsidian.sh                # Obsidian + 11 community plugins installer
+├── docker/
+│   ├── hermes_docker_secondary.sh             # Secondary Docker Hermes helper
+│   └── docker-compose.hermes-secondary.yml  # Secondary Docker Hermes Compose service
+└── extras/
+    └── install_obsidian.sh                  # Obsidian + 11 community plugins installer
 ```
 
 ---
@@ -179,13 +180,13 @@ If you already run Hermes on bare-metal and want a second isolated instance in D
 
 ```bash
 # 1) One-time setup wizard for the Docker instance
-bash nice-to-have/install_hermes_docker_secondary.sh setup
+bash docker/hermes_docker_secondary.sh setup
 
 # 2) Start the Docker gateway
-bash nice-to-have/install_hermes_docker_secondary.sh start
+bash docker/hermes_docker_secondary.sh start
 
 # 3) Follow logs
-bash nice-to-have/install_hermes_docker_secondary.sh logs
+bash docker/hermes_docker_secondary.sh logs
 ```
 
 Defaults used by this toolkit:
@@ -197,7 +198,7 @@ Defaults used by this toolkit:
 Quick interactive chat from the container:
 
 ```bash
-bash nice-to-have/install_hermes_docker_secondary.sh shell
+bash docker/hermes_docker_secondary.sh shell
 hermes
 ```
 
